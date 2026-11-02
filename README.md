@@ -11,6 +11,10 @@ open build/WacomViewportLock.app
 
 Optional: `SIGN_IDENTITY="Apple Development: …" ./build_app.sh` signs with a real identity. Ad-hoc signed builds can lose their Accessibility grant each time you rebuild.
 
+## App icon
+
+`Resources/AppIcon.icns` is generated from code. To change it, edit `scripts/make_icon.swift`, then run `swift scripts/make_icon.swift && ./build_app.sh`.
+
 ## Usage
 
 | Action | How |

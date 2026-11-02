@@ -13,6 +13,7 @@ rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp "$BIN_DIR/$APP_NAME" "$APP_DIR/Contents/MacOS/$APP_NAME"
 cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
+cp Resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
 
 # Set SIGN_IDENTITY to a Developer ID / Apple Development identity to keep the
 # Accessibility grant stable across rebuilds; ad-hoc ("-") works but may need re-granting.

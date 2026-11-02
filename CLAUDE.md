@@ -7,6 +7,7 @@ macOS 14+ menu-bar app (Swift 5 language mode, SwiftPM, AppKit + SwiftUI). It sh
 - `swift build`: compile check.
 - `./build_app.sh`: release build, wrapped and ad-hoc signed as `build/WacomViewportLock.app`.
 - Relaunch with the `relaunch` skill (`.claude/skills/relaunch`). `open` on a running app only re-activates the **old** instance, so quit it first and verify the new process start time.
+- App icon: `swift scripts/make_icon.swift` regenerates `Resources/AppIcon.icns` (nib-lock artwork). `build_app.sh` copies it into the bundle.
 - Pen debugging: `log stream --level debug --predicate 'subsystem == "com.example.WacomViewportLock"'` logs every pen event's original and rewritten location.
 
 There are no automated tests. Pen behaviour can only be verified by the user on a real tablet, so say so plainly instead of claiming it works. Screenshots need Screen Recording permission, which the shell doesn't have. To check layout, list window frames with the `relaunch` skill's `list_windows.swift`.
