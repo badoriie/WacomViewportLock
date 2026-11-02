@@ -30,6 +30,10 @@ swift format format --in-place -r Sources Tests scripts Package.swift # auto-fix
 
 CI (`.github/workflows/ci.yml`) runs the lint, build and tests on every push and pull request, and uploads the zipped app bundle as an artifact. The unit tests cover the mapping math, display clamping, physical sizing and settings. Pen behaviour itself needs a real tablet.
 
+## Contributing
+
+`main` is protected: every change goes through a pull request that must pass **Lint**, **Build & test** and **SonarCloud** before it can be squash-merged. Force pushes are blocked. Report security issues privately; see [SECURITY.md](SECURITY.md).
+
 ## Releasing
 
 Releases are built by `.github/workflows/release.yml` when a version tag is pushed:

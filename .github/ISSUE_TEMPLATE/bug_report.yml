@@ -1,0 +1,41 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: tablet
+    attributes:
+      label: Tablet model
+      placeholder: e.g. One by Wacom S (CTL-472)
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 15.4
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: WacomViewportLock version
+      placeholder: e.g. v1.0.0
+  - type: textarea
+    id: setup
+    attributes:
+      label: Display setup and Wacom mapping
+      description: Monitors connected, which one the tablet is mapped to, and the app that you're writing in.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Pen event log (optional)
+      description: "Output of `log stream --level debug --predicate 'subsystem == \"com.example.WacomViewportLock\"'` while reproducing."
+      render: text
