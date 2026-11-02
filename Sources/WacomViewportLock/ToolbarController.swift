@@ -27,7 +27,7 @@ final class ToolbarPanel: NSPanel {
 
 /// Buttons in a non-activating panel must react to the very first click (or pen tap).
 private final class ToolbarButton: NSButton {
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func acceptsFirstMouse(for _: NSEvent?) -> Bool { true }
 }
 
 /// The lock button shown inside the top-right corner of the overlay.

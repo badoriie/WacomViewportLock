@@ -75,7 +75,7 @@ final class OverlayView: NSView {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+    required init?(coder _: NSCoder) { fatalError("init(coder:) is not supported") }
 
     /// Shows the pen-tip marker at a point in CG global coordinates, or hides it for `nil`.
     func showPenCursor(at globalPoint: CGPoint?) {
@@ -96,7 +96,7 @@ final class OverlayView: NSView {
         NSRect(x: bounds.maxX - Self.gripSize, y: bounds.minY, width: Self.gripSize, height: Self.gripSize)
     }
 
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func acceptsFirstMouse(for _: NSEvent?) -> Bool { true }
 
     override func resetCursorRects() {
         guard !isLocked else { return }
@@ -108,7 +108,7 @@ final class OverlayView: NSView {
 
     // MARK: Drawing
 
-    override func draw(_ dirtyRect: NSRect) {
+    override func draw(_: NSRect) {
         // The fill must never be fully transparent, or clicks would fall through while unlocked.
         accentColor.withAlphaComponent(max(fillOpacity, 0.02)).setFill()
         bounds.fill()
@@ -175,7 +175,7 @@ final class OverlayView: NSView {
         }
     }
 
-    override func mouseDragged(with event: NSEvent) {
+    override func mouseDragged(with _: NSEvent) {
         guard let window, let start = resizeStart, aspectRatio > 0 else { return }
         let mouse = NSEvent.mouseLocation
         let dx = mouse.x - start.mouse.x
@@ -196,7 +196,7 @@ final class OverlayView: NSView {
         )
     }
 
-    override func mouseUp(with event: NSEvent) {
+    override func mouseUp(with _: NSEvent) {
         resizeStart = nil
     }
 }
@@ -230,7 +230,7 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+    required init?(coder _: NSCoder) { fatalError("init(coder:) is not supported") }
 
     var isLocked: Bool {
         get { overlayView.isLocked }
@@ -289,16 +289,16 @@ final class OverlayWindowController: NSWindowController, NSWindowDelegate {
 
     // MARK: NSWindowDelegate
 
-    func windowDidMove(_ notification: Notification) {
+    func windowDidMove(_: Notification) {
         onGeometryChange?()
     }
 
-    func windowDidResize(_ notification: Notification) {
+    func windowDidResize(_: Notification) {
         overlayView.needsDisplay = true
         onGeometryChange?()
     }
 
-    func windowDidChangeScreen(_ notification: Notification) {
+    func windowDidChangeScreen(_: Notification) {
         onScreenChange?()
         onGeometryChange?()
     }

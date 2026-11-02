@@ -10,7 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotKey: GlobalHotKey?
     private var screenObserver: NSObjectProtocol?
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         let settings = AppSettings()
         viewport = ViewportController(settings: settings)
         statusBar = StatusBarController(viewport: viewport, settings: settings)
@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewport.showOverlay()
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
+    func applicationWillTerminate(_: Notification) {
         // Never leave an event tap or click-through window behind.
         viewport.shutdown()
         if let screenObserver {

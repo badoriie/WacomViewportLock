@@ -305,7 +305,7 @@ final class TabletRemapper {
 // C-compatible tap callbacks; `userInfo` carries an unretained `TabletRemapper`.
 
 private func hidTapCallback(
-    proxy: CGEventTapProxy,
+    proxy _: CGEventTapProxy,
     type: CGEventType,
     event: CGEvent,
     userInfo: UnsafeMutableRawPointer?
@@ -316,7 +316,7 @@ private func hidTapCallback(
 }
 
 private func sessionTapCallback(
-    proxy: CGEventTapProxy,
+    proxy _: CGEventTapProxy,
     type: CGEventType,
     event: CGEvent,
     userInfo: UnsafeMutableRawPointer?

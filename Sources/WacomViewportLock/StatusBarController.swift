@@ -90,7 +90,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     // MARK: State refresh
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
+    func menuNeedsUpdate(_: NSMenu) {
         lockItem.state = viewport.isLocked ? .on : .off
         overlayItem.state = viewport.isOverlayVisible ? .on : .off
         opacitySlider.doubleValue = settings.opacity

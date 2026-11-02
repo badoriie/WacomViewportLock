@@ -89,7 +89,9 @@ for points in [16, 32, 128, 256, 512] {
 
 let output = root.appending(path: "Resources/AppIcon.icns")
 let iconutil = Process()
-iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
+// iconutil ships with macOS; set ICONUTIL to use a different copy.
+let iconutilPath = ProcessInfo.processInfo.environment["ICONUTIL"] ?? "/usr/bin/iconutil"
+iconutil.executableURL = URL(fileURLWithPath: iconutilPath)
 iconutil.arguments = ["-c", "icns", iconset.path, "-o", output.path]
 try iconutil.run()
 iconutil.waitUntilExit()
