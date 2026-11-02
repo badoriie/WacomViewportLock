@@ -77,6 +77,19 @@ func png(pixels: Int) -> Data {
     return rep.representation(using: .png, properties: [:])!
 }
 
+/// Looks up a command on `PATH` (iconutil ships with macOS). Set ICONUTIL to use a specific copy.
+func findExecutable(_ name: String) -> URL {
+    let environment = ProcessInfo.processInfo.environment
+    if let override = environment["ICONUTIL"] { return URL(fileURLWithPath: override) }
+    let candidates = (environment["PATH"] ?? "").split(separator: ":").map {
+        URL(fileURLWithPath: String($0)).appending(path: name)
+    }
+    guard let found = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0.path) }) else {
+        fatalError("\(name) not found on PATH")
+    }
+    return found
+}
+
 let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
 let iconset = FileManager.default.temporaryDirectory.appending(path: "AppIcon.iconset")
 try? FileManager.default.removeItem(at: iconset)
@@ -89,9 +102,7 @@ for points in [16, 32, 128, 256, 512] {
 
 let output = root.appending(path: "Resources/AppIcon.icns")
 let iconutil = Process()
-// iconutil ships with macOS; set ICONUTIL to use a different copy.
-let iconutilPath = ProcessInfo.processInfo.environment["ICONUTIL"] ?? "/usr/bin/iconutil"
-iconutil.executableURL = URL(fileURLWithPath: iconutilPath)
+iconutil.executableURL = findExecutable("iconutil")
 iconutil.arguments = ["-c", "icns", iconset.path, "-o", output.path]
 try iconutil.run()
 iconutil.waitUntilExit()

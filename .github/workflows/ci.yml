@@ -32,9 +32,9 @@ jobs:
       - name: Toolchain
         run: swift --version
       - name: Build
-        run: swift build
+        run: swift build --only-use-versions-from-resolved-file
       - name: Test
-        run: swift test
+        run: swift test --only-use-versions-from-resolved-file
       - name: Build app bundle
         env:
           BUILD_NUMBER: ${{ github.run_number }}

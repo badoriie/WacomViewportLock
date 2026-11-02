@@ -62,6 +62,7 @@ Each of these fixed a bug the user hit. Use the `remap-reviewer` agent on any ch
 - Pushing a tag publishes a release, so only tag when the user asks.
 - **SonarCloud** analyses every push automatically (GitHub app, project `badoriie_WacomViewportLock`, no config in the repo). **After every push, run the `check-quality` skill** and fix every CI failure and every open SonarCloud issue or hotspot, then push again until CI is green and the quality gate is `OK`. The user asked for this to happen every time.
 - Pin GitHub Actions to full commit SHAs with a `# vX.Y.Z` comment; SonarCloud flags version tags as a security issue.
+- Always run SwiftPM with `--only-use-versions-from-resolved-file` in CI and scripts; SonarCloud flags unlocked dependency resolution as a security issue.
 - For unused parameters in overrides, delegate methods and C callbacks, keep the label and drop the internal name (`with _: NSEvent`); SonarCloud flags them otherwise.
 
 ## Git

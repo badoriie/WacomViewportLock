@@ -31,7 +31,7 @@ jobs:
           [[ "$version" == *-* ]] && echo "prerelease=true" >> "$GITHUB_OUTPUT" || echo "prerelease=false" >> "$GITHUB_OUTPUT"
 
       - name: Test
-        run: swift test
+        run: swift test --only-use-versions-from-resolved-file
 
       - name: Build app bundle
         env:

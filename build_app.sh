@@ -11,8 +11,8 @@ cd "$(dirname "$0")"
 APP_NAME="WacomViewportLock"
 APP_DIR="build/${APP_NAME}.app"
 
-swift build -c release
-BIN_DIR="$(swift build -c release --show-bin-path)"
+swift build -c release --only-use-versions-from-resolved-file
+BIN_DIR="$(swift build -c release --only-use-versions-from-resolved-file --show-bin-path)"
 
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
