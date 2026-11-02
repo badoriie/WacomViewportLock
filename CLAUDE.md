@@ -5,12 +5,14 @@ macOS 14+ menu-bar app (Swift 5 language mode, SwiftPM, AppKit + SwiftUI). It sh
 ## Build & run
 
 - `swift build`: compile check.
+- `swift test`: unit tests (Swift Testing) for the pure logic: overlay mapping, display clamping, physical-size frame, settings persistence.
+- `swift format lint --strict -r Sources Tests scripts Package.swift`: CI fails on any warning. Fix with `swift format format --in-place …`. Config lives in `.swift-format`.
 - `./build_app.sh`: release build, wrapped and ad-hoc signed as `build/WacomViewportLock.app`.
 - Relaunch with the `relaunch` skill (`.claude/skills/relaunch`). `open` on a running app only re-activates the **old** instance, so quit it first and verify the new process start time.
 - App icon: `swift scripts/make_icon.swift` regenerates `Resources/AppIcon.icns` (nib-lock artwork). `build_app.sh` copies it into the bundle.
 - Pen debugging: `log stream --level debug --predicate 'subsystem == "com.example.WacomViewportLock"'` logs every pen event's original and rewritten location.
 
-There are no automated tests. Pen behaviour can only be verified by the user on a real tablet, so say so plainly instead of claiming it works. Screenshots need Screen Recording permission, which the shell doesn't have. To check layout, list window frames with the `relaunch` skill's `list_windows.swift`.
+Before committing, run lint, build and tests; CI runs the same checks. When adding logic, keep the math in pure (often `static`) functions and add tests. Pen behaviour itself can only be verified by the user on a real tablet, so say so plainly instead of claiming it works. Screenshots need Screen Recording permission, which the shell doesn't have. To check layout, list window frames with the `relaunch` skill's `list_windows.swift`.
 
 Rebuilding with ad-hoc signing can invalidate the Accessibility grant. If locking fails, tell the user to re-add the app in System Settings › Privacy & Security › Accessibility.
 
@@ -51,6 +53,13 @@ Each of these fixed a bug the user hit. Use the `remap-reviewer` agent on any ch
 - `@MainActor` for UI and controllers. The event-tap callbacks run on the main run loop.
 - Comments explain *why*, especially for macOS quirks. Match the existing style and density.
 - Private or undocumented APIs (`CGSSetConnectionProperty`, `CGCursorIsVisible` via `dlsym`) are acceptable here: this is a personal tool, not for the App Store. Keep them isolated in `SystemCursor`.
+
+## CI & releases
+
+- `.github/workflows/ci.yml`: lint, build, test and app-bundle artifact on pushes to `main` and on PRs (macos-15 runner).
+- `.github/workflows/release.yml`: pushing a tag `vX.Y.Z` (or `vX.Y.Z-beta.N` for a pre-release) runs the tests and builds with `VERSION` and `BUILD_NUMBER` stamped in by `build_app.sh`. It publishes a GitHub Release with a DMG, a zip and SHA-256 sums. Builds are ad-hoc signed and not notarized (a deliberate choice for now).
+- Dependabot keeps the action versions current. License: MIT.
+- Pushing a tag publishes a release, so only tag when the user asks.
 
 ## Git
 

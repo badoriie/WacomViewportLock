@@ -148,7 +148,7 @@ final class ViewportController {
         } else {
             overlay.overlayView.sizeLabel = nil
         }
-        _ = settings.mappedDisplayID // track for observation; read again in updateMapping()
+        _ = settings.mappedDisplayID  // track for observation; read again in updateMapping()
         updateMapping()
     }
 
@@ -182,7 +182,7 @@ final class ViewportController {
             return ScreenScale(screenName: screen.localizedName, pointsPerMM: measured, isCalibrated: true)
         }
         guard let displayID = screen.displayID else { return nil }
-        let physical = CGDisplayScreenSize(displayID) // millimetres, as reported by the display
+        let physical = CGDisplayScreenSize(displayID)  // millimetres, as reported by the display
         guard physical.width > 0 else { return nil }
         return ScreenScale(
             screenName: screen.localizedName,
@@ -195,11 +195,11 @@ final class ViewportController {
     @discardableResult
     func calibrateScreen(measuredWidthMM: Double) -> Bool {
         guard measuredWidthMM > 0,
-              let window = overlay.window,
-              let key = overlayScreen?.stableDisplayKey
+            let window = overlay.window,
+            let key = overlayScreen?.stableDisplayKey
         else { return false }
         settings.screenScaleOverrides[key] = window.frame.width / measuredWidthMM
-        if !settings.keepsPhysicalSize { matchPhysicalSize() } // 1:1 mode re-fits via observation
+        if !settings.keepsPhysicalSize { matchPhysicalSize() }  // 1:1 mode re-fits via observation
         return true
     }
 
@@ -215,34 +215,49 @@ final class ViewportController {
     @discardableResult
     func matchPhysicalSize(animate: Bool = true) -> PhysicalSizeResult {
         guard let window = overlay.window,
-              let screen = overlayScreen,
-              let scale = screenScale(for: screen)
+            let screen = overlayScreen,
+            let scale = screenScale(for: screen)
         else {
             overlay.overlayView.sizeLabel = nil
             return .unavailable
         }
 
-        let visible = screen.visibleFrame
-        var size = NSSize(
-            width: settings.tabletWidthMM * scale.pointsPerMM,
-            height: settings.tabletHeightMM * scale.pointsPerMM
+        let (frame, fit) = Self.physicalFrame(
+            tabletMM: CGSize(width: settings.tabletWidthMM, height: settings.tabletHeightMM),
+            pointsPerMM: scale.pointsPerMM,
+            currentFrame: window.frame,
+            visibleFrame: screen.visibleFrame
         )
-        let fit = min(1, visible.width / size.width, visible.height / size.height)
-        size = NSSize(width: size.width * fit, height: size.height * fit)
-
-        var frame = NSRect(x: window.frame.minX, y: window.frame.maxY - size.height, width: size.width, height: size.height)
-        frame.origin.x = frame.minX.clamped(to: visible.minX...(visible.maxX - size.width))
-        frame.origin.y = frame.minY.clamped(to: visible.minY...(visible.maxY - size.height))
         if !window.frame.equalTo(frame) {
             window.setFrame(frame, display: true, animate: animate)
         }
 
         if settings.keepsPhysicalSize {
-            overlay.overlayView.sizeLabel = fit < 1
+            overlay.overlayView.sizeLabel =
+                fit < 1
                 ? "Scaled to \(Int((fit * 100).rounded()))% to fit this display"
                 : "\(formatLength(settings.tabletWidthMM)) × \(formatLength(settings.tabletHeightMM)) \(settings.unit.symbol) (1:1)"
         }
         return fit < 1 ? .scaledToFit(fit) : .exact
+    }
+
+    /// The overlay frame at the tablet's physical size, scaled down (keeping the aspect ratio) if it
+    /// doesn't fit `visibleFrame`. Keeps the top-left corner where possible, then moves the frame on screen.
+    /// - Returns: The frame (AppKit coordinates) and the scale applied to fit (1 = true physical size).
+    nonisolated static func physicalFrame(
+        tabletMM: CGSize,
+        pointsPerMM: CGFloat,
+        currentFrame: NSRect,
+        visibleFrame visible: NSRect
+    ) -> (frame: NSRect, fit: CGFloat) {
+        var size = NSSize(width: tabletMM.width * pointsPerMM, height: tabletMM.height * pointsPerMM)
+        let fit = min(1, visible.width / size.width, visible.height / size.height)
+        size = NSSize(width: size.width * fit, height: size.height * fit)
+
+        var frame = NSRect(x: currentFrame.minX, y: currentFrame.maxY - size.height, width: size.width, height: size.height)
+        frame.origin.x = frame.minX.clamped(to: visible.minX...(visible.maxX - size.width))
+        frame.origin.y = frame.minY.clamped(to: visible.minY...(visible.maxY - size.height))
+        return (frame, fit)
     }
 
     private func formatLength(_ millimeters: Double) -> String {

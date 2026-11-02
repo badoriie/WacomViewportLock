@@ -39,10 +39,11 @@ final class PointerWindow {
     /// Shows the pointer with its tip at a point in CG global coordinates.
     func show(at globalPoint: CGPoint) {
         let tipY = ScreenGeometry.primaryScreenHeight - globalPoint.y
-        panel.setFrameOrigin(NSPoint(
-            x: globalPoint.x - hotSpot.x,
-            y: tipY + hotSpot.y - imageSize.height
-        ))
+        panel.setFrameOrigin(
+            NSPoint(
+                x: globalPoint.x - hotSpot.x,
+                y: tipY + hotSpot.y - imageSize.height
+            ))
         if !panel.isVisible { panel.orderFrontRegardless() }
     }
 

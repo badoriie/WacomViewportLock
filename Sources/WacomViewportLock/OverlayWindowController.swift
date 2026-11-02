@@ -179,10 +179,11 @@ final class OverlayView: NSView {
         guard let window, let start = resizeStart, aspectRatio > 0 else { return }
         let mouse = NSEvent.mouseLocation
         let dx = mouse.x - start.mouse.x
-        let dy = start.mouse.y - mouse.y // dragging down grows the window
+        let dy = start.mouse.y - mouse.y  // dragging down grows the window
 
         // Follow whichever axis the user is moving more, then derive the other from the aspect ratio.
-        let width = abs(dx) >= abs(dy * aspectRatio)
+        let width =
+            abs(dx) >= abs(dy * aspectRatio)
             ? start.frame.width + dx
             : (start.frame.height + dy) * aspectRatio
         let clampedWidth = max(Self.minimumWidth, width)

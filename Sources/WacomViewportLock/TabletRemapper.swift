@@ -106,7 +106,7 @@ final class TabletRemapper {
         guard hidTap == nil else { return }
 
         guard let hidTap = makeTap(at: .cghidEventTap, callback: hidTapCallback),
-              let sessionTap = makeTap(at: .cgSessionEventTap, callback: sessionTapCallback)
+            let sessionTap = makeTap(at: .cgSessionEventTap, callback: sessionTapCallback)
         else {
             stop()
             throw TabletRemapperError.tapCreationFailed
@@ -143,14 +143,15 @@ final class TabletRemapper {
 
     private func makeTap(at location: CGEventTapLocation, callback: CGEventTapCallBack) -> CFMachPort? {
         let mask = Self.eventTypes.reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
-        guard let tap = CGEvent.tapCreate(
-            tap: location,
-            place: .headInsertEventTap,
-            options: .defaultTap,
-            eventsOfInterest: mask,
-            callback: callback,
-            userInfo: Unmanaged.passUnretained(self).toOpaque()
-        ),
+        guard
+            let tap = CGEvent.tapCreate(
+                tap: location,
+                place: .headInsertEventTap,
+                options: .defaultTap,
+                eventsOfInterest: mask,
+                callback: callback,
+                userInfo: Unmanaged.passUnretained(self).toOpaque()
+            ),
             let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         else { return nil }
 
@@ -181,7 +182,8 @@ final class TabletRemapper {
         }
 
         let subtype = event.getIntegerValueField(.mouseEventSubtype)
-        let isProximityEvent = type == .tabletProximity
+        let isProximityEvent =
+            type == .tabletProximity
             || subtype == Int64(CGEventMouseSubtype.tabletProximity.rawValue)
         if isProximityEvent {
             penInProximity = event.getIntegerValueField(.tabletProximityEventEnterProximity) != 0
@@ -192,7 +194,8 @@ final class TabletRemapper {
         }
 
         let isButtonEvent = Self.buttonEventTypes.contains(type)
-        let carriesTabletData = type == .tabletPointer
+        let carriesTabletData =
+            type == .tabletPointer
             || isProximityEvent
             || subtype == Int64(CGEventMouseSubtype.tabletPoint.rawValue)
         // Pen clicks may arrive without tablet data; while the pen is in proximity, they're still the pen's.
@@ -236,7 +239,8 @@ final class TabletRemapper {
             onPenActivity?(mapped)
         }
 
-        logger.debug("""
+        logger.debug(
+            """
             stage=\(stage == .hid ? "hid" : "session", privacy: .public) \
             mapping=\(self.mapping == .overlay ? "overlay" : "relative", privacy: .public) \
             type=\(type.rawValue, privacy: .public) subtype=\(subtype, privacy: .public) \
@@ -257,7 +261,7 @@ final class TabletRemapper {
     /// Maps a point from `sourceRect` into `targetRect`, clamped to stay inside it.
     func map(_ point: CGPoint) -> CGPoint? {
         guard !sourceRect.isNull, !sourceRect.isEmpty,
-              !targetRect.isNull, !targetRect.isEmpty
+            !targetRect.isNull, !targetRect.isEmpty
         else { return nil }
 
         let nx = ((point.x - sourceRect.minX) / sourceRect.width).clamped(to: 0...1)
@@ -282,11 +286,11 @@ final class TabletRemapper {
         guard let anchor = relativeAnchor else { return pen }
 
         let point = CGPoint(x: anchor.pointer.x + pen.x - anchor.pen.x, y: anchor.pointer.y + pen.y - anchor.pen.y)
-        return clampedToDisplays(point)
+        return Self.clamp(point, toNearestOf: displayRects)
     }
 
     /// Keeps a point on screen: displays rarely tile a perfect rectangle, so clamp into the nearest one.
-    private func clampedToDisplays(_ point: CGPoint) -> CGPoint {
+    static func clamp(_ point: CGPoint, toNearestOf displayRects: [CGRect]) -> CGPoint {
         guard !displayRects.contains(where: { $0.contains(point) }) else { return point }
         let candidates = displayRects.map { rect in
             CGPoint(

@@ -20,8 +20,9 @@ func drawIcon() {
     NSColor(srgbRed: 0.09, green: 0.11, blue: 0.16, alpha: 1).setFill()
     tile.fill()
     NSGraphicsContext.restoreGraphicsState()
-    NSGradient(starting: NSColor(srgbRed: 0.17, green: 0.20, blue: 0.28, alpha: 1),
-               ending: NSColor(srgbRed: 0.06, green: 0.08, blue: 0.12, alpha: 1))!.draw(in: tile, angle: -90)
+    NSGradient(
+        starting: NSColor(srgbRed: 0.17, green: 0.20, blue: 0.28, alpha: 1),
+        ending: NSColor(srgbRed: 0.06, green: 0.08, blue: 0.12, alpha: 1))!.draw(in: tile, angle: -90)
 
     // Shackle
     let shackle = NSBezierPath()
@@ -61,9 +62,10 @@ func drawIcon() {
 
 /// Renders the icon directly at `pixels` × `pixels` (vector drawing scaled, not a downsampled bitmap).
 func png(pixels: Int) -> Data {
-    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
-                               bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    let rep = NSBitmapImageRep(
+        bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
+        bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+        colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
     rep.size = NSSize(width: pixels, height: pixels)
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)

@@ -35,7 +35,7 @@ Also look for ordinary bugs: retain cycles in closures, main-thread assumptions,
 
 ## Verification
 
-Run `swift build 2>&1 | grep -E "error|warning:|Build complete"` and report the result. Pen behaviour can't be tested here, so don't claim it works.
+Run `swift build 2>&1 | grep -E "error|warning:|Build complete"` and `swift test 2>&1 | tail -3`, and report both results. If the change touches pure math (mapping, clamping, sizing), check that tests cover it. Pen behaviour can't be tested here, so don't claim it works.
 
 ## Output
 

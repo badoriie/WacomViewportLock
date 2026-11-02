@@ -32,7 +32,8 @@ final class GlobalHotKey {
         )
         guard installStatus == noErr else { return nil }
 
-        let hotKeyID = EventHotKeyID(signature: OSType(0x5756_4C4B) /* 'WVLK' */, id: 1)
+        let signature = OSType(0x5756_4C4B)  // 'WVLK'
+        let hotKeyID = EventHotKeyID(signature: signature, id: 1)
         let registerStatus = RegisterEventHotKey(
             keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef
         )

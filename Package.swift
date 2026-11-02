@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
@@ -8,6 +8,12 @@ let package = Package(
         .executableTarget(
             name: "WacomViewportLock",
             path: "Sources/WacomViewportLock"
-        )
-    ]
+        ),
+        .testTarget(
+            name: "WacomViewportLockTests",
+            dependencies: ["WacomViewportLock"],
+            path: "Tests/WacomViewportLockTests"
+        ),
+    ],
+    swiftLanguageModes: [.v5]
 )

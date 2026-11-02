@@ -109,10 +109,11 @@ final class ToolbarController: NSObject {
     /// Places the button just inside the top-right corner of the parent window.
     func reposition() {
         guard let parent = parentWindow else { return }
-        panel.setFrameOrigin(NSPoint(
-            x: parent.frame.maxX - panel.frame.width - Self.inset,
-            y: parent.frame.maxY - panel.frame.height - Self.inset
-        ))
+        panel.setFrameOrigin(
+            NSPoint(
+                x: parent.frame.maxX - panel.frame.width - Self.inset,
+                y: parent.frame.maxY - panel.frame.height - Self.inset
+            ))
     }
 
     func update(isLocked: Bool, tint: NSColor) {

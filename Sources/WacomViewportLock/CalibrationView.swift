@@ -55,14 +55,18 @@ struct CalibrationView: View {
             GroupBox("Screen Calibration") {
                 VStack(alignment: .leading, spacing: 8) {
                     if let scale = viewport.currentScreenScale {
-                        Text("\(scale.screenName): \(scale.pointsPerMM, format: .number.precision(.fractionLength(3))) pt/mm (\(scale.isCalibrated ? "measured" : "reported by the display"))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("For an exact size, measure the overlay's width on screen with a ruler (outer edge of the blue border) and enter it.")
+                        Text(
+                            "\(scale.screenName): \(scale.pointsPerMM, format: .number.precision(.fractionLength(3))) pt/mm (\(scale.isCalibrated ? "measured" : "reported by the display"))"
+                        )
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text(
+                        "For an exact size, measure the overlay's width on screen with a ruler (outer edge of the blue border) and enter it."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     HStack {
                         TextField("Measured width", value: $measuredWidth, format: .number.precision(.fractionLength(0...2)))
                             .textFieldStyle(.roundedBorder)
@@ -192,7 +196,8 @@ struct CalibrationView: View {
     private func applyMeasurement() {
         guard let measuredWidth, measuredWidth > 0 else { return }
         if viewport.calibrateScreen(measuredWidthMM: measuredWidth * settings.unit.millimetersPerUnit) {
-            statusMessage = "Screen calibrated. The overlay should now measure \((settings.tabletWidthMM / settings.unit.millimetersPerUnit).formatted()) \(settings.unit.symbol) wide."
+            statusMessage =
+                "Screen calibrated. The overlay should now measure \((settings.tabletWidthMM / settings.unit.millimetersPerUnit).formatted()) \(settings.unit.symbol) wide."
             self.measuredWidth = nil
         } else {
             statusMessage = "Couldn't calibrate this display."
