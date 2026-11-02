@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(swift build)",
+      "Bash(swift build *)",
+      "Bash(swift package describe)",
+      "Bash(swift package resolve)",
+      "Bash(./build_app.sh)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log)",
+      "Bash(git log *)",
+      "Bash(git show *)"
+    ],
+    "deny": [
+      "Edit(.build/**)",
+      "Edit(build/**)"
+    ]
+  }
+}
