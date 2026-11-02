@@ -68,4 +68,8 @@ Each of these fixed a bug the user hit. Use the `remap-reviewer` agent on any ch
 ## Git
 
 - Public repo `badoriie/WacomViewportLock`. Commit email for this repo is `amir@nasari.me`, set in local git config.
-- Commit or push only when asked. The force-push permission isn't granted to Claude, so the user runs force-pushes.
+- Commit or push only when asked. **Use the `git-workflow` agent** (`.claude/agents/git-workflow.md`) for all git work: a branch per change, then a pull request, green checks, and a squash merge when the user asks.
+- `main` is protected by the **Protect main** ruleset, with no bypass, even for the owner. It requires a pull request and squash merges only. `Lint`, `Build & test` and `SonarCloud Code Analysis` must pass on a branch that's up to date, and review threads must be resolved. Force pushes and deletion are blocked. Direct pushes to `main` are rejected (GH013).
+- The **Protect release tags** ruleset stops `v*` tags from being moved or deleted; a bad release gets a new patch version.
+- Never force-push or rewrite pushed history, even on feature branches. Update a branch by merging `origin/main` into it.
+- Repo settings: squash-only merges (PR title/body), auto-merge allowed, head branches deleted after merge, Dependabot alerts and security updates on, secret scanning with push protection on, private vulnerability reporting on, and Actions tokens read-only by default.
