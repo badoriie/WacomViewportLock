@@ -6,13 +6,13 @@ macOS 14+ menu-bar app (Swift 5 language mode, SwiftPM, AppKit + SwiftUI). It sh
 
 - `swift build`: compile check.
 - `swift test`: unit tests (Swift Testing) for the pure logic: overlay mapping, display clamping, physical-size frame, settings persistence.
-- `swift format lint --strict -r Sources Tests scripts Package.swift`: CI fails on any warning. Fix with `swift format format --in-place …`. Config lives in `.swift-format`.
+- `swift format lint --strict -r Sources Tests scripts Package.swift`: the pre-commit hook and the release fail on any warning. Fix with `swift format format --in-place …`. Config lives in `.swift-format`.
 - `./build_app.sh`: release build, wrapped and ad-hoc signed as `build/WacomViewportLock.app`.
 - Relaunch with the `relaunch` skill (`.claude/skills/relaunch`). `open` on a running app only re-activates the **old** instance, so quit it first and verify the new process start time.
 - App icon: `swift scripts/make_icon.swift` regenerates `Resources/AppIcon.icns` (nib-lock artwork). `build_app.sh` copies it into the bundle.
 - Pen debugging: `log stream --level debug --predicate 'subsystem == "com.example.WacomViewportLock"'` logs every pen event's original and rewritten location.
 
-Before committing, run lint, build and tests; CI runs the same checks. When adding logic, keep the math in pure (often `static`) functions and add tests. Pen behaviour itself can only be verified by the user on a real tablet, so say so plainly instead of claiming it works. Screenshots need Screen Recording permission, which the shell doesn't have. To check layout, list window frames with the `relaunch` skill's `list_windows.swift`.
+Lint, build and tests run in the pre-commit hook (`.pre-commit-config.yaml`; enable once with `pre-commit install`). It needs Xcode: the Command Line Tools lack SwiftUI's macro plugin. There is no CI on pushes or PRs, so never skip the hook. When adding logic, keep the math in pure (often `static`) functions and add tests. Pen behaviour itself can only be verified by the user on a real tablet, so say so plainly instead of claiming it works. Screenshots need Screen Recording permission, which the shell doesn't have. To check layout, list window frames with the `relaunch` skill's `list_windows.swift`.
 
 Rebuilding with ad-hoc signing can invalidate the Accessibility grant. If locking fails, tell the user to re-add the app in System Settings › Privacy & Security › Accessibility.
 
@@ -57,21 +57,22 @@ Each of these fixed a bug the user hit. Use the `remap-reviewer` agent on any ch
 
 ## CI & releases
 
-- `.github/workflows/ci.yml`: lint, build, test and app-bundle artifact on pushes to `main` and on PRs (macos-15 runner).
-- `.github/workflows/release.yml`: pushing a tag `vX.Y.Z` (or `vX.Y.Z-beta.N` for a pre-release) runs the tests and builds with `VERSION` and `BUILD_NUMBER` stamped in by `build_app.sh`. It publishes a GitHub Release with a DMG, a zip and SHA-256 sums. Builds are ad-hoc signed and not notarized (a deliberate choice for now).
+- **No CI on pushes or PRs** (the user's choice: macOS runners were too slow to start). The pre-commit hook does the checking, and the release re-runs everything.
+- **Versions and changelog are automatic (release-please).** PR titles must be Conventional Commits, because squash merges make the title the commit on `main`. `fix:` bumps the patch version. `feat:` and breaking changes (`feat!:`) bump the minor version while below 1.0. `build:` is listed in the changelog without forcing a bump on its own. `docs:`, `ci:`, `chore:`, `refactor:`, `test:` and `style:` are hidden. A `Release-As: X.Y.Z` line in the PR body forces a version.
+- `.github/workflows/release.yml`, on every push to `main`: release-please updates the open release PR (version in `.release-please-manifest.json`, `CHANGELOG.md`). **Merging the release PR is the release.** It creates a draft release and its tag. The build job then lints, tests, builds (`VERSION` and `BUILD_NUMBER` stamped in by `build_app.sh`), verifies the signature, attaches the DMG, zip, SHA-256 sums and appcast, and only then publishes the draft. A failed build leaves a draft and a tag. Fix forward with a new version, because tags can't be moved. Builds are ad-hoc signed and not notarized (a deliberate choice for now). There's no automatic path for pre-releases.
 - **Auto-updates (Sparkle):** `SUFeedURL` points at `releases/latest/download/appcast.xml`, so pre-releases are never offered. The release workflow signs the zip with the `SPARKLE_ED_PRIVATE_KEY` secret and attaches a one-item `appcast.xml`. It fails without the secret. The matching `SUPublicEDKey` is in `Info.plist`, and the private key is in the owner's login Keychain (account `WacomViewportLock`). Never regenerate it: installed copies would reject every future update. `sparkle:version` is the release run number, so it only goes up.
 - Dependabot keeps the action versions current. License: MIT.
-- Pushing a tag publishes a release, so only tag when the user asks.
-- **SonarCloud** analyses every push automatically (GitHub app, project `badoriie_WacomViewportLock`, no config in the repo). **After every push, run the `check-quality` skill** and fix every CI failure and every open SonarCloud issue or hotspot, then push again until CI is green and the quality gate is `OK`. The user asked for this to happen every time.
+- Merging the release PR publishes a release, so only merge it when the user asks. Never push `v*` tags by hand.
+- **SonarCloud** analyses every push automatically (GitHub app, project `badoriie_WacomViewportLock`, no config in the repo). **After every push, run the `check-quality` skill** and fix every open SonarCloud issue or hotspot, then push again until the quality gate is `OK`. The user asked for this to happen every time.
 - Pin GitHub Actions to full commit SHAs with a `# vX.Y.Z` comment; SonarCloud flags version tags as a security issue.
-- Always run SwiftPM with `--only-use-versions-from-resolved-file` in CI and scripts; SonarCloud flags unlocked dependency resolution as a security issue.
+- Always run SwiftPM with `--only-use-versions-from-resolved-file` in workflows and scripts; SonarCloud flags unlocked dependency resolution as a security issue.
 - For unused parameters in overrides, delegate methods and C callbacks, keep the label and drop the internal name (`with _: NSEvent`); SonarCloud flags them otherwise.
 
 ## Git
 
 - Public repo `badoriie/WacomViewportLock`. Commit email for this repo is `amir@nasari.me`, set in local git config.
-- Commit or push only when asked. **Use the `git-workflow` agent** (`.claude/agents/git-workflow.md`) for all git work: a branch per change, then a pull request, green checks, and a squash merge when the user asks.
-- `main` is protected by the **Protect main** ruleset, with no bypass, even for the owner. It requires a pull request and squash merges only. `Lint`, `Build & test` and `SonarCloud Code Analysis` must pass on a branch that's up to date, and review threads must be resolved. Force pushes and deletion are blocked. Direct pushes to `main` are rejected (GH013).
+- Commit or push only when asked. **Use the `git-workflow` agent** (`.claude/agents/git-workflow.md`) for all git work: a branch per change, then a pull request with **auto-merge on by default** (squash), so it merges once the checks pass. Release-please release PRs never get auto-merge: merging one publishes a release, so only when the user asks.
+- `main` is protected by the **Protect main** ruleset, with no bypass, even for the owner. It requires a pull request and squash merges only. Only `SonarCloud Code Analysis` must pass, on a branch that's up to date, and review threads must be resolved. Force pushes and deletion are blocked. Direct pushes to `main` are rejected (GH013).
 - The **Protect release tags** ruleset stops `v*` tags from being moved or deleted; a bad release gets a new patch version.
 - Never force-push or rewrite pushed history, even on feature branches. Update a branch by merging `origin/main` into it.
 - Repo settings: squash-only merges (PR title/body), auto-merge allowed, head branches deleted after merge, Dependabot alerts and security updates on, secret scanning with push protection on, private vulnerability reporting on, and Actions tokens read-only by default.

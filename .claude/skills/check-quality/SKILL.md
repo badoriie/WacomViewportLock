@@ -1,9 +1,9 @@
 ---
 name: check-quality
-description: After pushing to GitHub, wait for the CI run and the SonarCloud analysis of that commit, list every failure, open issue and security hotspot, and fix them. Use after every push to main or a PR branch of WacomViewportLock, or when the user asks about CI or SonarCloud status.
+description: After pushing to GitHub, wait for the SonarCloud analysis of that commit (and the Release workflow on main), list every failure, open issue and security hotspot, and fix them. Use after every push to main or a PR branch of WacomViewportLock, or when the user asks about release or SonarCloud status.
 ---
 
-# Check CI and SonarCloud after a push
+# Check SonarCloud (and releases) after a push
 
 SonarCloud analyses every push automatically through its GitHub app (project key `badoriie_WacomViewportLock`, public). It has no config in the repo. The quality gate fails on any new issue that lowers the security, reliability or maintainability rating.
 
@@ -17,7 +17,7 @@ gh api "repos/badoriie/WacomViewportLock/commits/$sha/check-runs" \
   -q '.check_runs[] | "\(.name) | \(.status) | \(.conclusion)"'
 ```
 
-Expect: `Lint`, `Build & test` (CI), and `SonarCloud Code Analysis`. Wait for CI to finish with `gh run watch <id> --exit-status` (find the ID with `gh run list --limit 3`). For a failed run, read the log with `gh run view <id> --log-failed`.
+Expect `SonarCloud Code Analysis`. There is no CI workflow on pushes or PRs; lint, build and tests run in the pre-commit hook. On `main`, the `Release` workflow also runs: it updates the release PR, and after a release PR merge it builds and publishes. Wait for it with `gh run watch <id> --exit-status` (find the ID with `gh run list --limit 3`), and read a failed run with `gh run view <id> --log-failed`.
 
 ## 2. SonarCloud quality gate, issues and hotspots
 
@@ -40,7 +40,7 @@ curl -s "https://sonarcloud.io/api/hotspots/search?projectKey=badoriie_WacomView
 
 ## 3. Fix everything
 
-- Fix **all** open issues and hotspots, not only the ones that fail the gate. Then run lint, build and tests (`swift format lint --strict -r Sources Tests scripts Package.swift`, `swift build`, `swift test`), commit, push, and repeat this skill until CI is green and the gate is `OK` with 0 open issues.
+- Fix **all** open issues and hotspots, not only the ones that fail the gate. Then run lint, build and tests (`swift format lint --strict -r Sources Tests scripts Package.swift`, `swift build`, `swift test`), commit, push, and repeat this skill until the gate is `OK` with 0 open issues (and, on `main`, the `Release` workflow is green).
 - Known fixes:
   - `githubactions:S7694` (unpinned dependency): pin every `uses:` to a full commit SHA with a `# vX.Y.Z` comment. Resolve the SHA with `gh api repos/<owner>/<repo>/commits/<tag> -q .sha`. Dependabot updates SHA pins.
     The same rule flags `swift build` / `swift test` without locked resolution: always pass `--only-use-versions-from-resolved-file` (works even with no dependencies and no `Package.resolved`).
@@ -50,4 +50,4 @@ curl -s "https://sonarcloud.io/api/hotspots/search?projectKey=badoriie_WacomView
 
 ## Report
 
-Tell the user the CI result, the quality-gate status, what was fixed, and anything left for them.
+Tell the user the Release workflow result (if one ran), the quality-gate status, what was fixed, and anything left for them.

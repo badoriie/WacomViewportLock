@@ -1,6 +1,6 @@
 # WacomViewportLock
 
-[![CI](https://github.com/badoriie/WacomViewportLock/actions/workflows/ci.yml/badge.svg)](https://github.com/badoriie/WacomViewportLock/actions/workflows/ci.yml)
+[![Release workflow](https://github.com/badoriie/WacomViewportLock/actions/workflows/release.yml/badge.svg)](https://github.com/badoriie/WacomViewportLock/actions/workflows/release.yml)
 [![Release](https://img.shields.io/github/v/release/badoriie/WacomViewportLock?include_prereleases)](https://github.com/badoriie/WacomViewportLock/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -8,7 +8,9 @@ A macOS 14+ menu-bar utility that shows a floating, semi-transparent rectangle w
 
 ## Install
 
-Download the latest `.dmg` from [Releases](https://github.com/badoriie/WacomViewportLock/releases) and drag the app to Applications. Releases aren't notarized yet, so the first time, right-click the app › **Open** › **Open**. Then grant Accessibility access when asked.
+Download the latest `.dmg` from [Releases](https://github.com/badoriie/WacomViewportLock/releases) and drag the app to Applications. Releases aren't notarized yet, so macOS blocks the first launch: open System Settings › Privacy & Security, scroll down and click **Open Anyway**. Then grant Accessibility access when asked.
+
+After that, the app updates itself: it checks daily, and **Check for Updates…** in the menu bar menu checks right away. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ## Build & run
 
@@ -24,26 +26,19 @@ Optional: `SIGN_IDENTITY="Apple Development: …" ./build_app.sh` signs with a r
 ```sh
 swift build                                                           # compile
 swift test                                                            # unit tests
-swift format lint --strict -r Sources Tests scripts Package.swift     # style check (CI enforces it)
+swift format lint --strict -r Sources Tests scripts Package.swift     # style check
 swift format format --in-place -r Sources Tests scripts Package.swift # auto-fix style
 ```
 
-CI (`.github/workflows/ci.yml`) runs the lint, build and tests on every push and pull request, and uploads the zipped app bundle as an artifact. The unit tests cover the mapping math, display clamping, physical sizing and settings. Pen behaviour itself needs a real tablet.
+A [pre-commit](https://pre-commit.com) hook runs the lint, build and tests on every commit. Enable it once per clone with `pre-commit install`. It needs Xcode, not just the Command Line Tools. There is no CI on pushes or pull requests; the release workflow runs the same checks again before publishing. The unit tests cover the mapping math, display clamping, physical sizing and settings. Pen behaviour itself needs a real tablet.
 
 ## Contributing
 
-`main` is protected: every change goes through a pull request that must pass **Lint**, **Build & test** and **SonarCloud** before it can be squash-merged. Force pushes are blocked. Report security issues privately; see [SECURITY.md](SECURITY.md).
+`main` is protected: every change goes through a pull request that must pass **SonarCloud** before it can be squash-merged. PR titles follow [Conventional Commits](https://www.conventionalcommits.org) (`feat: …`, `fix: …`), because they decide the next version and the changelog entry. Force pushes are blocked. Report security issues privately; see [SECURITY.md](SECURITY.md).
 
 ## Releasing
 
-Releases are built by `.github/workflows/release.yml` when a version tag is pushed:
-
-```sh
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The workflow runs the tests and stamps the version into the app. It then publishes a GitHub Release with a `.dmg`, a `.zip` and `SHA256SUMS.txt`. Tags with a suffix, such as `v1.1.0-beta.1`, are published as pre-releases. Builds are ad-hoc signed; Developer ID signing and notarization can be added later.
+Versions and the changelog are handled by [release-please](https://github.com/googleapis/release-please) in `.github/workflows/release.yml`. After each merge to `main`, it keeps a release PR up to date that bumps the version and adds the merged PR titles to `CHANGELOG.md`. Below 1.0, `fix:` bumps the patch version; `feat:` and breaking changes bump the minor version. Merging the release PR creates a draft release and its tag. The workflow then lints, tests, builds and verifies the app, attaches a `.dmg`, a `.zip`, `SHA256SUMS.txt` and the Sparkle `appcast.xml`, and publishes the release. Installed copies then pick up the update. Builds are ad-hoc signed; Developer ID signing and notarization can be added later.
 
 ## App icon
 
