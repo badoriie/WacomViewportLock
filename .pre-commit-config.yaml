@@ -1,0 +1,17 @@
+# Local checks, run on every commit. Enable once per clone with: pre-commit install
+# There is no CI on pushes or PRs; the release workflow runs the same checks before publishing.
+repos:
+  - repo: local
+    hooks:
+      - id: swift-format
+        name: swift format lint
+        entry: swift format lint --strict --recursive Sources Tests scripts Package.swift
+        language: system
+        files: \.swift$
+        pass_filenames: false
+      - id: swift-build-test
+        name: swift build and test
+        entry: scripts/pre-commit-build-test.sh
+        language: system
+        files: ^(Sources/|Tests/|Resources/|Package\.(swift|resolved)$|build_app\.sh$)
+        pass_filenames: false

@@ -1,47 +1,71 @@
 name: Release
 
-# Push a tag like v1.2.0 (or v1.2.0-beta.1 for a pre-release) to publish a release:
-#   git tag v1.2.0 && git push origin v1.2.0
+# release-please keeps a release PR open that bumps the version and updates CHANGELOG.md from
+# the Conventional Commit titles merged to main. Merging that PR creates a draft release and its
+# tag; the build job then checks, builds and uploads everything before publishing the draft.
+# One workflow does both because tags created with GITHUB_TOKEN don't trigger other workflows.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  release:
+  release-please:
+    name: Release PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build:
     name: Build & publish
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
     runs-on: macos-15
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag_name }}
+      VERSION: ${{ needs.release-please.outputs.version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
 
-      - name: Read version from tag
-        id: version
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
-            echo "::error::Tag $GITHUB_REF_NAME is not a version like v1.2.0 or v1.2.0-beta.1"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          [[ "$version" == *-* ]] && echo "prerelease=true" >> "$GITHUB_OUTPUT" || echo "prerelease=false" >> "$GITHUB_OUTPUT"
+      - name: Toolchain
+        run: swift --version
+
+      - name: Lint
+        run: swift format lint --strict --recursive Sources Tests scripts Package.swift
 
       - name: Test
         run: swift test --only-use-versions-from-resolved-file
 
       - name: Build app bundle
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          BUILD_NUMBER: ${{ github.run_number }}
         run: ./build_app.sh
 
+      - name: Verify signature
+        run: codesign --verify --deep --strict build/WacomViewportLock.app
+
       - name: Package zip and DMG
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p dist dmg-staging
           ditto -c -k --keepParent build/WacomViewportLock.app "dist/WacomViewportLock-$VERSION.zip"
@@ -54,11 +78,9 @@ jobs:
 
       - name: Write Sparkle appcast
         # The app's SUFeedURL points at releases/latest/download/appcast.xml, so every release
-        # carries a one-item feed for itself. Pre-releases never become `latest`.
+        # carries a one-item feed for itself.
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
-          VERSION: ${{ steps.version.outputs.version }}
-          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           if [[ -z "$SPARKLE_ED_PRIVATE_KEY" ]]; then
             echo "::error::Secret SPARKLE_ED_PRIVATE_KEY is not set; updates can't be signed"
@@ -81,32 +103,34 @@ jobs:
                 <sparkle:version>$BUILD_NUMBER</sparkle:version>
                 <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
                 <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-                <sparkle:fullReleaseNotesLink>$base/tag/$GITHUB_REF_NAME</sparkle:fullReleaseNotesLink>
+                <sparkle:fullReleaseNotesLink>$base/tag/$TAG</sparkle:fullReleaseNotesLink>
                 <description><![CDATA[<p>WacomViewportLock $VERSION. After updating, macOS may ask you to
                   re-add the app under System Settings › Privacy &amp; Security › Accessibility.</p>]]></description>
-                <enclosure url="$base/download/$GITHUB_REF_NAME/$zip" type="application/octet-stream" $signature />
+                <enclosure url="$base/download/$TAG/$zip" type="application/octet-stream" $signature />
               </item>
             </channel>
           </rss>
           XML
+          xmllint --noout dist/appcast.xml
           cat dist/appcast.xml
 
       - name: Publish GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        # The draft only goes public once every asset is attached, so releases/latest never
+        # points at a release without an appcast.
         run: |
+          gh release upload "$TAG" dist/* --clobber
           cat > notes.md <<NOTES
           ## Install
 
           1. Download \`WacomViewportLock-$VERSION.dmg\` and drag the app to Applications.
-          2. The app isn't notarized yet, so the first time, right-click it › **Open** › **Open**
-             (or run \`xattr -dr com.apple.quarantine /Applications/WacomViewportLock.app\`).
+          2. The app isn't notarized, so macOS blocks the first launch. Open System Settings ›
+             Privacy & Security, scroll down and click **Open Anyway** (or run
+             \`xattr -dr com.apple.quarantine /Applications/WacomViewportLock.app\`).
           3. Grant Accessibility access when asked (System Settings › Privacy & Security › Accessibility).
-             After updating, you may need to remove and re-add the app there.
+
+          Already installed? **Check for Updates…** in the menu bar menu installs this version.
+          After updating, you may need to remove and re-add the app under Accessibility.
 
           NOTES
-          flags=(--title "WacomViewportLock $VERSION" --notes-file notes.md --generate-notes --verify-tag)
-          [[ "$PRERELEASE" == "true" ]] && flags+=(--prerelease)
-          gh release create "$GITHUB_REF_NAME" dist/* "${flags[@]}"
+          gh release view "$TAG" --json body --jq .body >> notes.md
+          gh release edit "$TAG" --notes-file notes.md --draft=false --latest
