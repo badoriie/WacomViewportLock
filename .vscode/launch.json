@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:WacomViewportLock}",
+            "name": "Debug WacomViewportLock",
+            "target": "WacomViewportLock",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug WacomViewportLock"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:WacomViewportLock}",
+            "name": "Release WacomViewportLock",
+            "target": "WacomViewportLock",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release WacomViewportLock"
+        }
+    ]
+}
