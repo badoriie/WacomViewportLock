@@ -36,6 +36,10 @@ A [pre-commit](https://pre-commit.com) hook runs the lint, build and tests on ev
 
 `main` is protected: every change goes through a pull request that must pass **SonarCloud** before it can be squash-merged. PR titles follow [Conventional Commits](https://www.conventionalcommits.org) (`feat: …`, `fix: …`), because they decide the next version and the changelog entry. Force pushes are blocked. Report security issues privately; see [SECURITY.md](SECURITY.md).
 
+## Cloud Claude
+
+Label an issue `claude` and [Claude Code](https://github.com/anthropics/claude-code-action) implements it in GitHub Actions, then opens a pull request. Review it on GitHub: **Request changes** with comments, and Claude pushes fixes to the same PR. `@claude` in a comment asks it anything. Only the repo owner can trigger it.
+
 ## Releasing
 
 Versions and the changelog are handled by [release-please](https://github.com/googleapis/release-please) in `.github/workflows/release.yml`. After each merge to `main`, it keeps a release PR up to date that bumps the version and adds the merged PR titles to `CHANGELOG.md`. Below 1.0, `fix:` bumps the patch version; `feat:` and breaking changes bump the minor version. Merging the release PR creates a draft release and its tag. The workflow then lints, tests, builds and verifies the app, attaches a `.dmg`, a `.zip`, `SHA256SUMS.txt` and the Sparkle `appcast.xml`, and publishes the release. Installed copies then pick up the update. Builds are ad-hoc signed; Developer ID signing and notarization can be added later.

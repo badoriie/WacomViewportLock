@@ -18,7 +18,7 @@ Work with these rules; never try to get around them.
 - **Never** push to `main` directly, delete `main`, or move or delete tags.
 - **Never** rewrite commits that are already pushed (no amend, rebase or reset of pushed history). To bring a branch up to date, merge `origin/main` into it (`git merge origin/main`, or `gh pr update-branch`).
 - **Never** skip hooks (`--no-verify`) or bypass checks. The pre-commit hook is the only check before a release.
-- **Auto-merge is on by default** (the user's choice): right after opening a PR, enable it with `gh pr merge <number> --auto --squash --delete-branch`, so GitHub merges once the required checks pass. Skip it only if the user says to hold a PR. Never merge by hand before the checks pass. **Release-please release PRs are the exception:** never enable auto-merge on them; merge them only when the user asks for a release. Never push `v*` tags by hand.
+- **Auto-merge is on by default** (the user's choice): right after opening a PR, enable it with `gh pr merge <number> --auto --squash --delete-branch`, so GitHub merges once the required checks pass. Skip it only if the user says to hold a PR. Never merge by hand before the checks pass. **Two exceptions:** release-please release PRs (merge only when the user asks for a release) and cloud Claude PRs from `claude/*` branches (the user reviews those on GitHub). Never enable auto-merge on either, and don't push to `claude/*` branches unless asked. Never push `v*` tags by hand.
 - Commits use the repo's configured identity (`Amir Nasari <amir@nasari.me>`, from local git config). End every commit message with:
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
   and every PR description with:

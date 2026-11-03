@@ -1,0 +1,156 @@
+name: Claude
+
+# Cloud Claude Code (anthropics/claude-code-action), limited to the repo owner:
+# - Label an issue you opened with `claude`: Claude implements it, runs lint, build and tests,
+#   and opens a PR on a `claude/issue-<n>-…` branch.
+# - Submit a "Request changes" review on such a PR: Claude addresses every comment and pushes.
+# - Mention @claude in an issue or PR conversation comment for anything else.
+# Only the owner's own issues, reviews and comments are acted on: this repo is public, and the
+# text is effectively Claude's instructions.
+on:
+  issues:
+    types: [labeled]
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  # Tools Claude may use beyond the action's built-in GitHub tools.
+  CLAUDE_TOOLS: >-
+    Edit,Write,Read,Glob,Grep,Task,TodoWrite,
+    Bash(git:*),Bash(swift:*),Bash(./build_app.sh),Bash(codesign --verify:*),
+    Bash(gh issue view:*),Bash(gh issue comment:*),
+    Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),
+    Bash(gh api repos/badoriie/WacomViewportLock/pulls:*)
+
+jobs:
+  implement-issue:
+    name: Implement issue
+    if: >-
+      github.event_name == 'issues' &&
+      github.event.label.name == 'claude' &&
+      github.event.sender.login == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner
+    # macOS with Xcode: the app only builds there (SwiftUI macros), and there's no CI on PRs.
+    runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE: #${{ github.event.issue.number }}
+
+            Implement this issue and open a pull request. Read the issue with
+            `gh issue view ${{ github.event.issue.number }} --comments`, and read CLAUDE.md first:
+            it has the architecture, the invariants for pen remapping and cursor code, and the
+            product decisions you must not undo.
+
+            1. Create a branch `claude/issue-${{ github.event.issue.number }}-<short-kebab-summary>` from main.
+            2. Implement the change. Match the surrounding code. Keep logic in pure functions with
+               tests, as CLAUDE.md asks. If you touch TabletRemapper, SystemCursor, PointerWindow
+               or ViewportController, use the remap-reviewer agent before committing.
+            3. Run all of these and fix every failure before committing:
+               swift format lint --strict -r Sources Tests scripts Package.swift
+               swift build --only-use-versions-from-resolved-file
+               swift test --only-use-versions-from-resolved-file
+               ./build_app.sh && codesign --verify --deep --strict build/WacomViewportLock.app
+            4. Commit with a Conventional Commit subject (feat:, fix:, docs:, refactor:, …).
+               It decides the next version via release-please. Push the branch.
+            5. Open the PR with `gh pr create --base main`. Its title must be the same Conventional
+               Commit subject. Its body follows .github/pull_request_template.md, includes
+               "Closes #${{ github.event.issue.number }}", lists the checks you ran with their results,
+               and says plainly that pen behaviour needs testing on a real tablet if it changed.
+               Do not enable auto-merge: the owner reviews these PRs.
+            6. Comment on the issue with the PR link.
+
+            You can't change files under .github/workflows (the token has no workflow scope).
+            If the issue needs that, or is unclear, comment on the issue explaining what you need
+            instead of guessing.
+          claude_args: --allowedTools "${{ env.CLAUDE_TOOLS }}"
+
+  address-review:
+    name: Address review
+    if: >-
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'changes_requested' &&
+      github.event.review.user.login == github.repository_owner &&
+      startsWith(github.event.pull_request.head.ref, 'claude/')
+    runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR: #${{ github.event.pull_request.number }} (branch ${{ github.event.pull_request.head.ref }}, checked out)
+            REVIEW ID: ${{ github.event.review.id }}
+
+            The owner requested changes on this PR. Read CLAUDE.md, then the review:
+            `gh pr view ${{ github.event.pull_request.number }} --comments`, the review body, and
+            its inline comments with
+            `gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/${{ github.event.review.id }}/comments`.
+            Also read earlier review threads with
+            `gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments`.
+
+            Address every point. Then run the same checks as for a new PR and fix any failure:
+              swift format lint --strict -r Sources Tests scripts Package.swift
+              swift build --only-use-versions-from-resolved-file
+              swift test --only-use-versions-from-resolved-file
+              ./build_app.sh && codesign --verify --deep --strict build/WacomViewportLock.app
+            Commit with Conventional Commit messages and push to this same branch. Never
+            force-push or rewrite pushed history. If main moved, merge origin/main into the branch.
+            Finally, comment on the PR with what you changed for each point, and ask about any
+            point you disagree with or couldn't do. Don't guess.
+          claude_args: --allowedTools "${{ env.CLAUDE_TOOLS }}"
+
+  mention:
+    name: Answer @claude
+    if: >-
+      github.event_name == 'issue_comment' &&
+      contains(github.event.comment.body, '@claude') &&
+      github.event.comment.user.login == github.repository_owner
+    runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@4845bacbb38b3c4b15d948f035349786f678e068 # v1.0.267
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: --allowedTools "${{ env.CLAUDE_TOOLS }}"
