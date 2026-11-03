@@ -4,6 +4,13 @@ All notable changes to WacomViewportLock. New entries are written by
 [release-please](https://github.com/googleapis/release-please) from the Conventional Commit
 titles of merged pull requests.
 
+## [0.2.1](https://github.com/badoriie/WacomViewportLock/compare/v0.2.0...v0.2.1) (2026-11-03)
+
+
+### Build & Release
+
+* release with release-please, check with pre-commit instead of CI ([#5](https://github.com/badoriie/WacomViewportLock/issues/5)) ([bfb0db5](https://github.com/badoriie/WacomViewportLock/commit/bfb0db5bf4e7074bda2c95eb90a2cca1460bdb51))
+
 ## [0.2.0](https://github.com/badoriie/WacomViewportLock/compare/v0.1.0...v0.2.0) (2026-11-03)
 
 ### Features
