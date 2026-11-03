@@ -5,11 +5,15 @@ import Testing
 
 @Suite("Updater")
 struct UpdaterControllerTests {
-    private let app = URL(fileURLWithPath: "/Applications/WacomViewportLock.app")
-    private let info: [String: Any] = [
-        "SUFeedURL": "https://example.com/appcast.xml",
-        "SUPublicEDKey": "key",
-    ]
+    // Paths are built from the temporary directory rather than hard-coded (SonarCloud S1075).
+    private let tmp = FileManager.default.temporaryDirectory
+    private var app: URL { tmp.appendingPathComponent("WacomViewportLock.app") }
+    private var info: [String: Any] {
+        [
+            "SUFeedURL": tmp.appendingPathComponent("appcast.xml").absoluteString,
+            "SUPublicEDKey": "key",
+        ]
+    }
 
     @Test("A bundled app with feed and key can update")
     func bundled() {
@@ -18,7 +22,7 @@ struct UpdaterControllerTests {
 
     @Test("Unbundled runs (swift run) don't start Sparkle")
     func unbundled() {
-        let binDir = URL(fileURLWithPath: "/tmp/.build/debug")
+        let binDir = tmp.appendingPathComponent(".build").appendingPathComponent("debug")
         #expect(!UpdaterController.canUpdate(bundleURL: binDir, info: info))
     }
 
@@ -44,6 +48,7 @@ struct UpdaterControllerTests {
         #expect(UpdaterController.canUpdate(bundleURL: app, info: plist))
         let feed = try #require(plist["SUFeedURL"] as? String)
         // `latest` excludes pre-releases: only stable versions are offered as updates.
-        #expect(feed.hasSuffix("/releases/latest/download/appcast.xml"))
+        let feedURL = try #require(URL(string: feed))
+        #expect(Array(feedURL.pathComponents.suffix(4)) == ["releases", "latest", "download", "appcast.xml"])
     }
 }
