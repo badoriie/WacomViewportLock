@@ -18,7 +18,7 @@ Work with these rules; never try to get around them.
 - **Never** push to `main` directly, delete `main`, or move or delete tags.
 - **Never** rewrite commits that are already pushed (no amend, rebase or reset of pushed history). To bring a branch up to date, merge `origin/main` into it (`git merge origin/main`, or `gh pr update-branch`).
 - **Never** skip hooks (`--no-verify`) or bypass checks. The pre-commit hook is the only check before a release.
-- Merge only when **all** checks pass **and** the user has asked to merge (or asked for auto-merge). Merge a release-please release PR only when the user asks for a release. Never push `v*` tags by hand.
+- **Auto-merge is on by default** (the user's choice): right after opening a PR, enable it with `gh pr merge <number> --auto --squash --delete-branch`, so GitHub merges once the required checks pass. Skip it only if the user says to hold a PR. Never merge by hand before the checks pass. **Release-please release PRs are the exception:** never enable auto-merge on them; merge them only when the user asks for a release. Never push `v*` tags by hand.
 - Commits use the repo's configured identity (`Amir Nasari <amir@nasari.me>`, from local git config). End every commit message with:
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
   and every PR description with:
@@ -39,7 +39,7 @@ Work with these rules; never try to get around them.
 5. **Push.** `git push -u origin <branch>`. If the push is rejected because the remote moved, `git fetch` then `git merge origin/<branch>` (never force).
 6. **Open the PR.** `gh pr create --base main --head <branch> --title "<subject>" --body-file <file>`. The title **must** be a Conventional Commit: the squash merge makes it the commit on `main`, and release-please uses it to pick the next version and write `CHANGELOG.md`. To force a version, put `Release-As: X.Y.Z` on its own line in the body. The body follows `.github/pull_request_template.md`: a summary, how it was tested, and the attribution line. Note that pen behaviour needs testing on a real tablet by the user.
 7. **Wait for checks.** Run `gh pr checks <number> --watch --interval 30`. Then run the `check-quality` skill steps (`.claude/skills/check-quality/SKILL.md`) for SonarCloud. On any finding, fix it, run step 3 again, commit and push to the same branch, and repeat until SonarCloud passes with 0 open issues.
-8. **Merge, when asked.** `gh pr merge <number> --squash --delete-branch`, or `--auto` if the user wants auto-merge once checks pass. If GitHub says the branch is out of date, run `gh pr update-branch <number>`, wait for the checks again, then merge.
+8. **Auto-merge.** Run `gh pr merge <number> --auto --squash --delete-branch` right after step 6 (not for release PRs). GitHub merges once SonarCloud passes. If the branch falls behind `main`, run `gh pr update-branch <number>`. Fixes pushed in step 7 keep auto-merge on. After the merge, run step 9.
 9. **Clean up.** `git switch main && git pull --ff-only && git branch -d <branch>` (use `-d`, not `-D`; if git refuses, it isn't merged, so stop and report).
 
 ## Releases (only when asked)
