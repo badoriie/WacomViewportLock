@@ -2,18 +2,20 @@ import AppKit
 import Carbon.HIToolbox
 
 /// Wires together the settings model, the viewport (overlay + remapper),
-/// the status bar menu, and the global hotkey.
+/// the status bar menu, the updater, and the global hotkey.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var viewport: ViewportController!
     private var statusBar: StatusBarController!
+    private var updater: UpdaterController!
     private var hotKey: GlobalHotKey?
     private var screenObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_: Notification) {
         let settings = AppSettings()
         viewport = ViewportController(settings: settings)
-        statusBar = StatusBarController(viewport: viewport, settings: settings)
+        updater = UpdaterController()
+        statusBar = StatusBarController(viewport: viewport, settings: settings, updater: updater)
 
         // ⌃⌥⌘L toggles lock mode from anywhere.
         hotKey = GlobalHotKey(

@@ -52,6 +52,45 @@ jobs:
           (cd dist && shasum -a 256 -- * > SHA256SUMS.txt)
           cat dist/SHA256SUMS.txt
 
+      - name: Write Sparkle appcast
+        # The app's SUFeedURL points at releases/latest/download/appcast.xml, so every release
+        # carries a one-item feed for itself. Pre-releases never become `latest`.
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          if [[ -z "$SPARKLE_ED_PRIVATE_KEY" ]]; then
+            echo "::error::Secret SPARKLE_ED_PRIVATE_KEY is not set; updates can't be signed"
+            exit 1
+          fi
+          zip="WacomViewportLock-$VERSION.zip"
+          # Prints: sparkle:edSignature="…" length="…"
+          signature="$(printf '%s' "$SPARKLE_ED_PRIVATE_KEY" \
+            | .build/artifacts/sparkle/Sparkle/bin/sign_update --ed-key-file - "dist/$zip")"
+          [[ "$signature" == *edSignature=* ]] || { echo "::error::sign_update failed"; exit 1; }
+          base="https://github.com/$GITHUB_REPOSITORY/releases"
+          cat > dist/appcast.xml <<XML
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>WacomViewportLock</title>
+              <item>
+                <title>Version $VERSION</title>
+                <pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
+                <sparkle:version>$BUILD_NUMBER</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <sparkle:fullReleaseNotesLink>$base/tag/$GITHUB_REF_NAME</sparkle:fullReleaseNotesLink>
+                <description><![CDATA[<p>WacomViewportLock $VERSION. After updating, macOS may ask you to
+                  re-add the app under System Settings › Privacy &amp; Security › Accessibility.</p>]]></description>
+                <enclosure url="$base/download/$GITHUB_REF_NAME/$zip" type="application/octet-stream" $signature />
+              </item>
+            </channel>
+          </rss>
+          XML
+          cat dist/appcast.xml
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

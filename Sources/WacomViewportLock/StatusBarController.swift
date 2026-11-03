@@ -6,6 +6,7 @@ import SwiftUI
 final class StatusBarController: NSObject, NSMenuDelegate {
     private let viewport: ViewportController
     private let settings: AppSettings
+    private let updater: UpdaterController
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let menu = NSMenu()
 
@@ -29,9 +30,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         return popover
     }()
 
-    init(viewport: ViewportController, settings: AppSettings) {
+    init(viewport: ViewportController, settings: AppSettings, updater: UpdaterController) {
         self.viewport = viewport
         self.settings = settings
+        self.updater = updater
         super.init()
         buildMenu()
         statusItem.menu = menu
@@ -62,6 +64,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         accessibilityItem = addItem("Grant Accessibility Access…", #selector(grantAccessibility))
+        addItem("Check for Updates…", #selector(checkForUpdates)).isHidden = !updater.isAvailable
         addItem("Quit WacomViewportLock", #selector(quit), key: "q")
     }
 
@@ -145,6 +148,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     @objc private func grantAccessibility() { Permissions.presentAccessibilityAlert() }
+
+    @objc private func checkForUpdates() { updater.checkForUpdates() }
 
     @objc private func quit() { NSApp.terminate(nil) }
 }

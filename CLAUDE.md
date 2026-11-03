@@ -27,6 +27,7 @@ Rebuilding with ad-hoc signing can invalidate the Accessibility grant. If lockin
 | `PointerWindow` | Arrow-pointer stand-in at cursor window level, used in mouse mode. |
 | `SystemCursor` | Hides the system cursor while another app is frontmost (private CGS property). Re-hides on app activation. |
 | `AppSettings` | `@Observable` model persisted to `UserDefaults`. `observeContinuously` bridges it to AppKit. |
+| `UpdaterController` | Sparkle auto-updates and the "Check for Updates…" menu item. Disabled for unbundled runs. |
 | `ScreenGeometry` | Display IDs, AppKit (bottom-left origin) ↔ CG (top-left origin) conversion. Always convert through it. |
 
 ## Invariants: read before touching remapping or cursor code
@@ -58,6 +59,7 @@ Each of these fixed a bug the user hit. Use the `remap-reviewer` agent on any ch
 
 - `.github/workflows/ci.yml`: lint, build, test and app-bundle artifact on pushes to `main` and on PRs (macos-15 runner).
 - `.github/workflows/release.yml`: pushing a tag `vX.Y.Z` (or `vX.Y.Z-beta.N` for a pre-release) runs the tests and builds with `VERSION` and `BUILD_NUMBER` stamped in by `build_app.sh`. It publishes a GitHub Release with a DMG, a zip and SHA-256 sums. Builds are ad-hoc signed and not notarized (a deliberate choice for now).
+- **Auto-updates (Sparkle):** `SUFeedURL` points at `releases/latest/download/appcast.xml`, so pre-releases are never offered. The release workflow signs the zip with the `SPARKLE_ED_PRIVATE_KEY` secret and attaches a one-item `appcast.xml`. It fails without the secret. The matching `SUPublicEDKey` is in `Info.plist`, and the private key is in the owner's login Keychain (account `WacomViewportLock`). Never regenerate it: installed copies would reject every future update. `sparkle:version` is the release run number, so it only goes up.
 - Dependabot keeps the action versions current. License: MIT.
 - Pushing a tag publishes a release, so only tag when the user asks.
 - **SonarCloud** analyses every push automatically (GitHub app, project `badoriie_WacomViewportLock`, no config in the repo). **After every push, run the `check-quality` skill** and fix every CI failure and every open SonarCloud issue or hotspot, then push again until CI is green and the quality gate is `OK`. The user asked for this to happen every time.
